@@ -1,3 +1,4 @@
+import hmac
 import mimetypes
 import os
 import sys
@@ -5,7 +6,7 @@ import traceback
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
@@ -25,11 +26,32 @@ from sop_generator import generate_sop_docx  # noqa: E402
 from tracker_generator import generate_tracker_xlsx  # noqa: E402
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "")
 TMP_DIR = ROOT / ".tmp"
 TMP_DIR.mkdir(exist_ok=True)
 
 GRANTS_ROOT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_GRANTS_ROOT_FOLDER_ID", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
+
+
+@app.before_request
+def require_login():
+    if request.path == "/login" or request.path.startswith("/static"):
+        return
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        if hmac.compare_digest(request.form.get("password", ""), APP_PASSWORD):
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        error = "Incorrect password."
+    return render_template("login.html", error=error)
 
 _drive_service = None
 

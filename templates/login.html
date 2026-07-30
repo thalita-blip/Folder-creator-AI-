@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grant Folder Automation — Login</title>
+<style>
+  :root {
+    --accent: #2f6f5e;
+    --accent-dark: #24594b;
+    --accent-soft: #e7f1ee;
+    --bg: #f6f7f5;
+    --card: #ffffff;
+    --border: #e1e4e0;
+    --text: #1c1f1e;
+    --text-muted: #6b716e;
+    --error: #b3261e;
+    --error-bg: #fbeae9;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #6fb3a0;
+      --accent-dark: #8fc9b8;
+      --accent-soft: #1c2b27;
+      --bg: #15171a;
+      --card: #1e2124;
+      --border: #30343a;
+      --text: #ecefee;
+      --text-muted: #9aa09d;
+      --error: #ff8a80;
+      --error-bg: #3a1f1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    margin: 0; padding: 20px;
+  }
+  .card {
+    width: 100%; max-width: 360px; background: var(--card);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  h1 { font-size: 18px; font-weight: 650; margin: 0 0 4px; }
+  p.subtitle { color: var(--text-muted); font-size: 13.5px; margin: 0 0 20px; }
+  label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+  input[type=password] {
+    width: 100%; padding: 9px 11px; font-size: 14px; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  button {
+    width: 100%; margin-top: 16px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; border-radius: 8px; background: var(--accent); color: #fff;
+  }
+  button:hover { background: var(--accent-dark); }
+  .error {
+    color: var(--error); background: var(--error-bg); border-radius: 8px;
+    padding: 10px 12px; margin-top: 14px; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Grant Folder Automation</h1>
+  <p class="subtitle">Enter the team password to continue.</p>
+  <form method="post">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autofocus required>
+    <button type="submit">Continue</button>
+  </form>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+</div>
+</body>
+</html>
