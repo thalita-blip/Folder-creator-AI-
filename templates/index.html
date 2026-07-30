@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grant Folder Automation</title>
+<style>
+  :root {
+    --accent: #2f6f5e;
+    --accent-dark: #24594b;
+    --accent-soft: #e7f1ee;
+    --bg: #f6f7f5;
+    --card: #ffffff;
+    --border: #e1e4e0;
+    --text: #1c1f1e;
+    --text-muted: #6b716e;
+    --error: #b3261e;
+    --error-bg: #fbeae9;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #6fb3a0;
+      --accent-dark: #8fc9b8;
+      --accent-soft: #1c2b27;
+      --bg: #15171a;
+      --card: #1e2124;
+      --border: #30343a;
+      --text: #ecefee;
+      --text-muted: #9aa09d;
+      --error: #ff8a80;
+      --error-bg: #3a1f1d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 21px; font-weight: 650; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .subtitle { color: var(--text-muted); font-size: 13.5px; margin: 0; }
+
+  .progress { display: flex; list-style: none; margin: 28px 0 0; padding: 0; }
+  .progress li {
+    flex: 1; text-align: center; position: relative;
+    font-size: 12.5px; color: var(--text-muted); font-weight: 500;
+  }
+  .progress li::before {
+    content: ""; display: block; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--card); border: 2px solid var(--border); margin: 0 auto 6px;
+    line-height: 18px; font-size: 12px; color: var(--text-muted);
+  }
+  .progress li::after {
+    content: ""; position: absolute; top: 10px; left: -50%; width: 100%; height: 2px;
+    background: var(--border); z-index: -1;
+  }
+  .progress li:first-child::after { display: none; }
+  .progress li.current { color: var(--accent-dark); }
+  .progress li.current::before { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .progress li.done { color: var(--text); }
+  .progress li.done::before { background: var(--accent); border-color: var(--accent); }
+  .progress li.done::after { background: var(--accent); }
+
+  .step {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-top: 24px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .step.active { display: block; }
+  .step h3 { margin: 0 0 4px; font-size: 16px; }
+
+  label { display: block; margin-top: 18px; font-weight: 600; font-size: 13px; color: var(--text); }
+  label:first-of-type { margin-top: 0; }
+  .field-hint { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+
+  input[type=text], input[type=url], input[type=number], input[type=file], textarea {
+    width: 100%; padding: 9px 11px; margin-top: 6px; box-sizing: border-box;
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  textarea { min-height: 110px; resize: vertical; }
+  input[type=file] { padding: 8px; cursor: pointer; }
+
+  .row { display: flex; gap: 12px; margin-top: 6px; }
+  .row > div { flex: 1; }
+  .divider { text-align: center; color: var(--text-muted); font-size: 12px; margin: 10px 0 2px; }
+
+  button {
+    margin-top: 22px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; border-radius: 8px;
+    background: var(--accent); color: #fff;
+    transition: background .15s ease, transform .05s ease;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:active { transform: scale(0.98); }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  .error {
+    color: var(--error); background: var(--error-bg); border-radius: 8px;
+    padding: 10px 12px; margin-top: 14px; font-size: 13px; display: none;
+  }
+  .error:not(:empty) { display: block; }
+  .note { color: var(--text-muted); font-size: 13px; }
+
+  .match-card {
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .match-card b { font-size: 14px; }
+  .match-score { color: var(--text-muted); font-size: 12.5px; }
+
+  pre.log {
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 12px; border-radius: 8px; white-space: pre-wrap; font-size: 12.5px; color: var(--text-muted);
+  }
+
+  .results { list-style: none; padding: 0; margin: 4px 0 0; }
+  .results li { margin-bottom: 8px; }
+  a.result-link {
+    display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 8px; text-decoration: none;
+    color: var(--text); font-size: 13.5px; font-weight: 500; transition: border-color .15s ease;
+  }
+  a.result-link:hover { border-color: var(--accent); color: var(--accent-dark); }
+  a.result-link::before { content: "↗"; color: var(--accent); font-weight: 700; }
+
+  #spinner { display: none; align-items: center; gap: 8px; margin-top: 16px; }
+  #spinner.active { display: flex; }
+  .spin {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Grant Folder Automation</h1>
+  <p class="subtitle">RFA in, structured SOP + tracker + Drive folder out.</p>
+</header>
+
+<ol class="progress" id="progress">
+  <li data-stage="1">Details</li>
+  <li data-stage="2">Processing</li>
+  <li data-stage="3">Review</li>
+  <li data-stage="4">Done</li>
+</ol>
+
+<div class="step active" id="step-1">
+  <label>Grant name</label>
+  <input type="text" id="grant_name" placeholder="e.g. DBIA">
+
+  <label>Year / cycle</label>
+  <input type="text" id="year" placeholder="e.g. 2026">
+
+  <label>RFA source</label>
+  <div class="row">
+    <div><input type="file" id="rfa_file" accept=".pdf,.docx"></div>
+    <div><input type="url" id="rfa_url" placeholder="or paste RFA URL"></div>
+  </div>
+  <div class="divider">or</div>
+  <textarea id="rfa_text" placeholder="paste RFA text directly"></textarea>
+
+  <label>Grant website URL <span class="field-hint">(optional — for scraping supporting documents)</span></label>
+  <input type="url" id="website_url" placeholder="leave blank to use the RFA URL above">
+
+  <button onclick="checkDuplicate()">Continue</button>
+  <div class="error" id="step1-error"></div>
+</div>
+
+<div class="step" id="step-2">
+  <h3>Possible existing grant folder found</h3>
+  <p class="note">This looks similar to a folder that already exists. Reuse it, or create a new one anyway.</p>
+  <div id="matches"></div>
+  <button class="secondary" onclick="chooseNew()">Create new folder anyway</button>
+</div>
+
+<div class="step" id="step-3">
+  <h3>Extracting RFA text&hellip;</h3>
+  <div id="ingest-status" class="note"></div>
+  <div class="error" id="step3-error"></div>
+</div>
+
+<div class="step" id="step-4">
+  <h3>Review synthesized SOP content</h3>
+  <p class="note">Edit anything before creating the Drive folder. Each field maps to one SOP section.</p>
+  <div id="sop-fields"></div>
+  <button onclick="createInDrive()">Create in Google Drive</button>
+  <div id="spinner"><span class="spin"></span> Working&hellip; this can take up to a minute.</div>
+  <div class="error" id="step4-error"></div>
+</div>
+
+<div class="step" id="step-5">
+  <h3>Done</h3>
+  <p class="note">Your grant folder, SOP, and tracker are live in Drive.</p>
+  <ul class="results">
+    <li><a class="result-link" id="link-grant" target="_blank"></a></li>
+    <li><a class="result-link" id="link-year" target="_blank"></a></li>
+    <li><a class="result-link" id="link-sop" target="_blank"></a></li>
+    <li><a class="result-link" id="link-tracker" target="_blank"></a></li>
+  </ul>
+  <h4>Scrape log</h4>
+  <pre class="log" id="scrape-log"></pre>
+</div>
+
+<script>
+let state = {
+  grant_name: "", year: "", website_url: "",
+  use_existing_grant_folder_id: null,
+  rfa_text: "",
+  synthesis: null,
+};
+
+const STAGE_OF_STEP = { "step-1": 1, "step-2": 1, "step-3": 2, "step-4": 3, "step-5": 4 };
+
+function show(id) {
+  document.querySelectorAll(".step").forEach(el => el.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+
+  const stage = STAGE_OF_STEP[id];
+  document.querySelectorAll("#progress li").forEach(li => {
+    const s = Number(li.dataset.stage);
+    li.classList.toggle("done", s < stage);
+    li.classList.toggle("current", s === stage);
+  });
+}
+
+async function checkDuplicate() {
+  const err = document.getElementById("step1-error");
+  err.textContent = "";
+  state.grant_name = document.getElementById("grant_name").value.trim();
+  state.year = document.getElementById("year").value.trim();
+  state.website_url = document.getElementById("website_url").value.trim() || document.getElementById("rfa_url").value.trim();
+
+  if (!state.grant_name || !state.year) {
+    err.textContent = "Grant name and year are required.";
+    return;
+  }
+
+  const resp = await fetch("/check-duplicate", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({grant_name: state.grant_name})
+  });
+  const data = await resp.json();
+  if (data.error) { err.textContent = data.error; return; }
+
+  if (data.matches && data.matches.length) {
+    const container = document.getElementById("matches");
+    container.innerHTML = "";
+    data.matches.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "match-card";
+      div.innerHTML = `<span><b>${m.name}</b><br><span class="match-score">${m.score}% match</span></span>
+        <button onclick='useExisting("${m.id}")'>Use this folder</button>`;
+      container.appendChild(div);
+    });
+    show("step-2");
+  } else {
+    await runIngest();
+  }
+}
+
+function useExisting(id) {
+  state.use_existing_grant_folder_id = id;
+  runIngest();
+}
+
+function chooseNew() {
+  state.use_existing_grant_folder_id = null;
+  runIngest();
+}
+
+async function runIngest() {
+  show("step-3");
+  const status = document.getElementById("ingest-status");
+  const err = document.getElementById("step3-error");
+  status.textContent = "Reading RFA...";
+
+  const form = new FormData();
+  const fileInput = document.getElementById("rfa_file");
+  const url = document.getElementById("rfa_url").value.trim();
+  const pasted = document.getElementById("rfa_text").value.trim();
+  if (fileInput.files[0]) form.append("file", fileInput.files[0]);
+  if (url) form.append("url", url);
+  if (pasted) form.append("text", pasted);
+
+  const resp = await fetch("/ingest", {method: "POST", body: form});
+  const data = await resp.json();
+  if (data.error) { err.textContent = data.error; return; }
+
+  status.textContent = `Extracted ${data.char_count} characters. Synthesizing SOP...`;
+  state.rfa_text = data.text;
+  await runSynthesize();
+}
+
+const SECTION_LABELS = [
+  ["grant_purpose", "Grant Purpose"],
+  ["grant_overview", "Grant Overview"],
+  ["reimbursement_rules", "Reimbursement Rules"],
+  ["eligible_projects", "Eligible Projects"],
+  ["eligible_costs", "Eligible Costs"],
+  ["ineligible_costs", "Ineligible Costs"],
+];
+
+async function runSynthesize() {
+  const err = document.getElementById("step3-error");
+  const resp = await fetch("/synthesize", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({text: state.rfa_text})
+  });
+  const data = await resp.json();
+  if (data.error) { err.textContent = data.error; return; }
+
+  state.synthesis = data;
+  renderReview();
+  show("step-4");
+}
+
+function renderReview() {
+  const container = document.getElementById("sop-fields");
+  container.innerHTML = "";
+  SECTION_LABELS.forEach(([key, label]) => {
+    const value = state.synthesis.sop_sections[key] || "";
+    const div = document.createElement("div");
+    div.innerHTML = `<label>${label}</label>
+      <textarea data-key="${key}">${typeof value === "string" ? value : JSON.stringify(value, null, 2)}</textarea>`;
+    container.appendChild(div);
+  });
+  const note = document.createElement("p");
+  note.className = "note";
+  note.textContent = "Remaining sections (eligibility questions, evaluation criteria, checklists, red flags, etc.) are carried through as synthesized and rendered directly into the SOP.";
+  container.appendChild(note);
+}
+
+async function createInDrive() {
+  const err = document.getElementById("step4-error");
+  err.textContent = "";
+  document.getElementById("spinner").classList.add("active");
+
+  document.querySelectorAll("#sop-fields textarea").forEach(t => {
+    const key = t.getAttribute("data-key");
+    state.synthesis.sop_sections[key] = t.value;
+  });
+
+  const resp = await fetch("/create", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      grant_name: state.grant_name,
+      year: state.year,
+      website_url: state.website_url,
+      use_existing_grant_folder_id: state.use_existing_grant_folder_id,
+      sop_sections: state.synthesis.sop_sections,
+      tracker_extras: state.synthesis.tracker_extras,
+    })
+  });
+  const data = await resp.json();
+  document.getElementById("spinner").classList.remove("active");
+  if (data.error) { err.textContent = data.error; return; }
+
+  document.getElementById("link-grant").textContent = "Grant folder";
+  document.getElementById("link-grant").href = data.grant_folder_url;
+  document.getElementById("link-year").textContent = `${state.year} folder`;
+  document.getElementById("link-year").href = data.year_folder_url;
+  document.getElementById("link-sop").textContent = "SOP.docx";
+  document.getElementById("link-sop").href = data.sop_url;
+  document.getElementById("link-tracker").textContent = "Tracker.xlsx";
+  document.getElementById("link-tracker").href = data.tracker_url;
+  document.getElementById("scrape-log").textContent = (data.scrape_log || []).join("\n") || "(no scraping performed)";
+  show("step-5");
+}
+
+show("step-1");
+</script>
+</body>
+</html>

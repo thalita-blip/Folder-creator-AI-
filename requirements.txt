@@ -1,0 +1,14 @@
+flask
+requests
+beautifulsoup4
+pdfplumber
+python-docx
+openpyxl
+python-dotenv
+google-genai
+pydantic
+rapidfuzz
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
